@@ -1,0 +1,51 @@
+.program distance
+.side_set 1 opt
+
+.define PUBLIC TRIGGER_PULSE_LENGTH 1250 - 1
+.define PUBLIC ECHO_LOOP_CYCLES 8
+.define PUBLIC MAX_ECHO_TIME 2941177 / ECHO_LOOP_CYCLES
+
+entry:
+    pull block                          ; Get MAX_ECHO_TIME value
+    mov y, osr                          ; Store MAX_ECHO_TIME in y
+
+.wrap_target
+    pull block                          ; Load TRIGGER_PULSE_LENGTH into OSR
+    mov x, osr          side 0b1        ; Store TRIGGER_PULSE_LENGTH in x
+trigger_loop:
+    jmp x-- trigger_loop                ; Wait for TRIGGER_PULSE_LENGTH cycles
+    mov isr, y          side 0b0        ; Save full value of MAX_ECHO_TIME in ISR
+    wait 0 pin 0                        ; Wait for echo pin to go low
+    wait 1 pin 0                        ; Wait for echo pin to go high
+
+echo_loop:
+    mov x, isr                          ; Load MAX_ECHO_TIME into x
+    in pins, 1                          ; Read echo pin into ISR
+    mov osr, isr
+    mov isr, x                          ; Restore MAX_ECHO_TIME back in ISR
+    set x, 0
+    out x, 1
+
+    jmp !x echo_done                    ; If echo pin is low, exit loop
+    jmp y-- echo_loop                   ; Else decrement counter and loop
+echo_done:
+    mov x, isr                          ; Temp store MAX_ECHO_TIME in x
+    mov isr, y                          ; Store echo counter in ISR
+    mov y, x                            ; Restore MAX_ECHO_TIME back in y
+    push noblock                        ; Push echo counter to FIFO
+.wrap
+
+% c-sdk {
+static inline void distance_program_init(PIO pio, uint sm, uint offset, uint pin) {
+   pio_gpio_init(pio, pin);
+   pio_gpio_init(pio, pin + 1);
+   pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, true);
+   pio_sm_set_consecutive_pindirs(pio, sm, pin + 1, 1, false);
+   pio_sm_config c = distance_program_get_default_config(offset);
+   sm_config_set_sideset_pins(&c, pin);
+   sm_config_set_in_pins(&c, pin + 1);
+   sm_config_set_out_shift(&c, true, false, 32);
+   sm_config_set_in_shift(&c, false, false, 32);
+   pio_sm_init(pio, sm, offset, &c);
+}
+%}

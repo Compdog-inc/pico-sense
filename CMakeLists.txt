@@ -36,7 +36,15 @@ add_compile_options(-Wall
 add_executable(pico-sense
         # entry point
         src/main.cpp
+        # sensors
+        src/distance.cpp
+        # utils
+        src/utils/status.cpp
+        # pio
+        src/pio/distance.c
         )
+
+pico_generate_pio_header(pico-sense ${CMAKE_CURRENT_LIST_DIR}/src/pio/distance.pio)
 
 # Include headers
 target_include_directories(pico-sense PRIVATE
@@ -51,6 +59,7 @@ target_link_libraries(pico-sense
         # Hardware libraries
         hardware_pwm
         hardware_pio
+        hardware_clocks
         )
 
 # Include kernel header

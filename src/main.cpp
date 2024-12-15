@@ -15,15 +15,50 @@
 #include <pico/stdlib.h>
 #include <pico/time.h>
 
+#include "config/options.h"
+#include "utils/status.h"
+
+// Sensors
+#include "distance.h"
+
 using namespace std::literals;
+
+static Status *led;
 
 static void main_task(__unused void *params)
 {
+    led = new Status();
+
+    led->setPattern(Pattern::Pulse);
+
+    DistanceSensor *sensor0 = new DistanceSensor(Config::Distance::SENSOR_0);
+    DistanceSensor *sensor1 = new DistanceSensor(Config::Distance::SENSOR_1);
+    DistanceSensor *sensor2 = new DistanceSensor(Config::Distance::SENSOR_2);
+    DistanceSensor *sensor3 = new DistanceSensor(Config::Distance::SENSOR_3);
+    DistanceSensor *sensor4 = new DistanceSensor(Config::Distance::SENSOR_4);
+    DistanceSensor *sensor5 = new DistanceSensor(Config::Distance::SENSOR_5);
+
     while (true)
     {
-        vTaskDelay(pdMS_TO_TICKS(500));
-        printf("[MAIN] Main update!\n");
+        float distance0 = sensor0->getDistance();
+        float distance5 = sensor5->getDistance();
+        float distance1 = sensor1->getDistance();
+        float distance4 = sensor4->getDistance();
+        float distance2 = sensor2->getDistance();
+        float distance3 = sensor3->getDistance();
+
+        printf("Distance: %.2f cm, %.2f cm, %.2f cm, %.2f cm, %.2f cm, %.2f cm\n", distance0, distance5, distance1, distance4, distance2, distance3);
+        vTaskDelay(pdMS_TO_TICKS(1));
     }
+
+    delete sensor0;
+    delete sensor1;
+    delete sensor2;
+    delete sensor3;
+    delete sensor4;
+    delete sensor5;
+
+    delete led;
 
     vTaskDelete(NULL);
 }
