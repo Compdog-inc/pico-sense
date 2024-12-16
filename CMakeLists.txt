@@ -37,7 +37,7 @@ add_executable(pico-sense
         # entry point
         src/main.cpp
         # sensors
-        src/distance.cpp
+        src/distance4.cpp
         # utils
         src/utils/status.cpp
         # pio

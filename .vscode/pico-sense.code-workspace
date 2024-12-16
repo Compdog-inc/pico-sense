@@ -147,7 +147,8 @@
 			"ios": "cpp",
 			"xtree": "cpp",
 			"distance.h": "c",
-			"distance.pio.h": "c"
+			"distance.pio.h": "c",
+			"options.h": "c"
 		},
 		"cmake.statusbar.advanced": {
 			"debug": {

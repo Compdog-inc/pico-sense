@@ -19,7 +19,9 @@
 #include "utils/status.h"
 
 // Sensors
-#include "distance.h"
+#include "distance4.h"
+
+#include "utils/average2.hpp"
 
 using namespace std::literals;
 
@@ -31,32 +33,37 @@ static void main_task(__unused void *params)
 
     led->setPattern(Pattern::Pulse);
 
-    DistanceSensor *sensor0 = new DistanceSensor(Config::Distance::SENSOR_0);
-    DistanceSensor *sensor1 = new DistanceSensor(Config::Distance::SENSOR_1);
-    DistanceSensor *sensor2 = new DistanceSensor(Config::Distance::SENSOR_2);
-    DistanceSensor *sensor3 = new DistanceSensor(Config::Distance::SENSOR_3);
-    DistanceSensor *sensor4 = new DistanceSensor(Config::Distance::SENSOR_4);
-    DistanceSensor *sensor5 = new DistanceSensor(Config::Distance::SENSOR_5);
+    DistanceSensor4 *sensor0523 = new DistanceSensor4(Config::Distance::SENSOR_0, Config::Distance::SENSOR_5, Config::Distance::SENSOR_2, Config::Distance::SENSOR_3);
+    DistanceSensor4 *sensor14 = new DistanceSensor4(Config::Distance::SENSOR_1, Config::Distance::SENSOR_4);
+
+    Average2<float> average0{};
+    Average2<float> average1{};
+    Average2<float> average2{};
+    Average2<float> average3{};
+    Average2<float> average4{};
+    Average2<float> average5{};
 
     while (true)
     {
-        float distance0 = sensor0->getDistance();
-        float distance5 = sensor5->getDistance();
-        float distance1 = sensor1->getDistance();
-        float distance4 = sensor4->getDistance();
-        float distance2 = sensor2->getDistance();
-        float distance3 = sensor3->getDistance();
+        absolute_time_t start = get_absolute_time();
+        const auto [distance0, distance5, distance2, distance3] = sensor0523->getDistance();
+        const auto [distance1, distance4, _0, _1] = sensor14->getDistance();
 
-        printf("Distance: %.2f cm, %.2f cm, %.2f cm, %.2f cm, %.2f cm, %.2f cm\n", distance0, distance5, distance1, distance4, distance2, distance3);
+        printf("Distance: %.2f cm, %.2f cm, %.2f cm, %.2f cm, %.2f cm, %.2f cm\n",
+               average0.updateAndGet(distance0),
+               average5.updateAndGet(distance5),
+               average1.updateAndGet(distance1),
+               average4.updateAndGet(distance4),
+               average2.updateAndGet(distance2),
+               average3.updateAndGet(distance3));
+        absolute_time_t end = get_absolute_time();
+
+        printf("Time: %lld us\n", absolute_time_diff_us(start, end));
         vTaskDelay(pdMS_TO_TICKS(1));
     }
 
-    delete sensor0;
-    delete sensor1;
-    delete sensor2;
-    delete sensor3;
-    delete sensor4;
-    delete sensor5;
+    delete sensor0523;
+    delete sensor14;
 
     delete led;
 
