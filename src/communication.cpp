@@ -37,8 +37,7 @@ Communication::~Communication()
 bool Communication::readStatus(CommunicationStatus *out_status)
 {
     uint8_t buffer[CommunicationStatus_SIZE + 1];
-    buffer[0] = (uint8_t)CommunicationCommand::ReadStatus;
-    if (spi_write_read_blocking(spi0, buffer, buffer, CommunicationStatus_SIZE + 1) != CommunicationStatus_SIZE + 1)
+    if (spi_read_blocking(spi0, (uint8_t)CommunicationCommand::ReadStatus, buffer, CommunicationStatus_SIZE + 1) != CommunicationStatus_SIZE + 1)
     {
         return false;
     }
@@ -53,8 +52,7 @@ bool Communication::readStatus(CommunicationStatus *out_status)
 bool Communication::readDistanceSensors(CommunicationDistanceSensors *out_sensors)
 {
     uint8_t buffer[CommunicationDistanceSensors_SIZE + 1];
-    buffer[0] = (uint8_t)CommunicationCommand::ReadDistanceSensors;
-    if (spi_write_read_blocking(spi0, buffer, buffer, CommunicationDistanceSensors_SIZE + 1) != CommunicationDistanceSensors_SIZE + 1)
+    if (spi_read_blocking(spi0, (uint8_t)CommunicationCommand::ReadDistanceSensors, buffer, CommunicationDistanceSensors_SIZE + 1) != CommunicationDistanceSensors_SIZE + 1)
     {
         return false;
     }
