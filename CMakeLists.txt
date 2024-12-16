@@ -42,6 +42,8 @@ add_executable(pico-sense
         src/utils/status.cpp
         # pio
         src/pio/distance.c
+        # comm
+        src/communication.cpp
         )
 
 pico_generate_pio_header(pico-sense ${CMAKE_CURRENT_LIST_DIR}/src/pio/distance.pio)
@@ -60,6 +62,7 @@ target_link_libraries(pico-sense
         hardware_pwm
         hardware_pio
         hardware_clocks
+        hardware_spi
         )
 
 # Include kernel header

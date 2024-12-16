@@ -21,11 +21,66 @@
 // Sensors
 #include "distance4.h"
 
+#include "communication.h"
+
 #include "utils/average2.hpp"
 
 using namespace std::literals;
 
 static Status *led;
+
+static void comm_task(__unused void *params)
+{
+    Communication *comm = new Communication(false);
+
+    while (true)
+    {
+        if (comm->hasData())
+        {
+            CommunicationCommand command = comm->getCommand();
+            switch (command)
+            {
+            case CommunicationCommand::ReadStatus:
+            {
+                CommunicationStatus status{
+                    .version = 0xDEADBEEF,
+                    .running = true};
+                if (!comm->writeStatus(status))
+                {
+                    printf("[COMM] Error writing status\n");
+                }
+
+                break;
+            }
+            case CommunicationCommand::ReadDistanceSensors:
+            {
+                CommunicationDistanceSensors sensors{
+                    .distance0 = 10.0f,
+                    .distance1 = 20.0f,
+                    .distance2 = 30.0f,
+                    .distance3 = 40.0f,
+                    .distance4 = 50.0f,
+                    .distance5 = 60.0f};
+                if (!comm->writeDistanceSensors(sensors))
+                {
+                    printf("[COMM] Error writing distance sensors\n");
+                }
+
+                break;
+            }
+            default:
+                printf("[COMM] Unknown command %u\n", (uint8_t)command);
+                break;
+            }
+
+            vTaskDelay(pdMS_TO_TICKS(1));
+        }
+    }
+
+    delete comm;
+
+    vTaskDelete(NULL);
+}
 
 static void main_task(__unused void *params)
 {
@@ -43,22 +98,20 @@ static void main_task(__unused void *params)
     Average2<float> average4{};
     Average2<float> average5{};
 
+    printf("[MAIN] Creating Communication task\n");
+    TaskHandle_t commTask;
+    xTaskCreate(comm_task, "CommTask", configMAIN_THREAD_STACK_SIZE, NULL, (tskIDLE_PRIORITY + 2UL), &commTask);
+
     while (true)
     {
         absolute_time_t start = get_absolute_time();
         const auto [distance0, distance5, distance2, distance3] = sensor0523->getDistance();
         const auto [distance1, distance4, _0, _1] = sensor14->getDistance();
 
-        printf("Distance: %.2f cm, %.2f cm, %.2f cm, %.2f cm, %.2f cm, %.2f cm\n",
-               average0.updateAndGet(distance0),
-               average5.updateAndGet(distance5),
-               average1.updateAndGet(distance1),
-               average4.updateAndGet(distance4),
-               average2.updateAndGet(distance2),
-               average3.updateAndGet(distance3));
         absolute_time_t end = get_absolute_time();
 
-        printf("Time: %lld us\n", absolute_time_diff_us(start, end));
+        // printf("Time: %lld us\n", absolute_time_diff_us(start, end));
+
         vTaskDelay(pdMS_TO_TICKS(1));
     }
 
