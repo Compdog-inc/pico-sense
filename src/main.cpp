@@ -37,44 +37,44 @@ static void comm_task(__unused void *params)
     {
         if (comm->hasData())
         {
-            CommunicationCommand command = comm->getCommand();
-            switch (command)
+            CommunicationStatus status{
+                .version = 0xDEADBEEF,
+                .running = true};
+
+            CommunicationDistanceSensors sensors{
+                .distance0 = 10.0f,
+                .distance1 = 20.0f,
+                .distance2 = 30.0f,
+                .distance3 = 40.0f,
+                .distance4 = 50.0f,
+                .distance5 = 60.0f};
+
+            CommunicationControl control{};
+            if (!comm->write(status, sensors, &control))
             {
-            case CommunicationCommand::ReadStatus:
+                printf("[COMM] Error writing data\n");
+            }
+            else
             {
-                CommunicationStatus status{
-                    .version = 0xDEADBEEF,
-                    .running = true};
-                if (!comm->writeStatus(status))
+                switch (control.command)
                 {
-                    printf("[COMM] Error writing status\n");
-                }
-
-                break;
-            }
-            case CommunicationCommand::ReadDistanceSensors:
-            {
-                CommunicationDistanceSensors sensors{
-                    .distance0 = 10.0f,
-                    .distance1 = 20.0f,
-                    .distance2 = 30.0f,
-                    .distance3 = 40.0f,
-                    .distance4 = 50.0f,
-                    .distance5 = 60.0f};
-                if (!comm->writeDistanceSensors(sensors))
+                case CommunicationCommand::Null:
+                    break;
+                case CommunicationCommand::Debug:
                 {
-                    printf("[COMM] Error writing distance sensors\n");
+                    printf("[COMM] Debug command '%s'\n", control.data);
+                    break;
                 }
-
-                break;
+                default:
+                {
+                    printf("[COMM] Unknown command %u\n", (uint8_t)control.command);
+                    break;
+                }
+                }
             }
-            default:
-                printf("[COMM] Unknown command %u\n", (uint8_t)command);
-                break;
-            }
-
-            vTaskDelay(pdMS_TO_TICKS(1));
         }
+
+        vTaskDelay(pdMS_TO_TICKS(5));
     }
 
     delete comm;
