@@ -29,6 +29,14 @@ using namespace std::literals;
 
 static Status *led;
 
+static CommunicationDistanceSensors sensors{
+    .distance0 = 0.0f,
+    .distance1 = 0.0f,
+    .distance2 = 0.0f,
+    .distance3 = 0.0f,
+    .distance4 = 0.0f,
+    .distance5 = 0.0f};
+
 static void comm_task(__unused void *params)
 {
     Communication *comm = new Communication(false);
@@ -38,16 +46,8 @@ static void comm_task(__unused void *params)
         if (comm->hasData())
         {
             CommunicationStatus status{
-                .version = 0xDEADBEEF,
+                .version = 0xBADC0DE5,
                 .running = true};
-
-            CommunicationDistanceSensors sensors{
-                .distance0 = 10.0f,
-                .distance1 = 20.0f,
-                .distance2 = 30.0f,
-                .distance3 = 40.0f,
-                .distance4 = 50.0f,
-                .distance5 = 60.0f};
 
             CommunicationControl control{};
             if (!comm->write(status, sensors, &control))
@@ -104,14 +104,23 @@ static void main_task(__unused void *params)
 
     while (true)
     {
+#ifdef PERFORMANCE_PROFILING
         absolute_time_t start = get_absolute_time();
+#endif
         const auto [distance0, distance5, distance2, distance3] = sensor0523->getDistance();
         const auto [distance1, distance4, _0, _1] = sensor14->getDistance();
 
+        sensors.distance0 = average0.updateAndGet(distance0);
+        sensors.distance1 = average1.updateAndGet(distance1);
+        sensors.distance2 = average2.updateAndGet(distance2);
+        sensors.distance3 = average3.updateAndGet(distance3);
+        sensors.distance4 = average4.updateAndGet(distance4);
+        sensors.distance5 = average5.updateAndGet(distance5);
+
+#ifdef PERFORMANCE_PROFILING
         absolute_time_t end = get_absolute_time();
-
-        // printf("Time: %lld us\n", absolute_time_diff_us(start, end));
-
+        printf("Time: %lld us\n", absolute_time_diff_us(start, end));
+#endif
         vTaskDelay(pdMS_TO_TICKS(1));
     }
 
